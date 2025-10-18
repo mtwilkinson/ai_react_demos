@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 import os
 from typing import Dict
 
-base_file_path = "../src/examples"
+base_file_path = "../Frontend/src/examples"
 
 class SaveFileArgs(BaseModel):
     file_name: str = Field(description="The name of the file")
