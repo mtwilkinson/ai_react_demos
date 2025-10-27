@@ -1,0 +1,8 @@
+{
+  "name": "backend",
+  "version": "0.0.0",
+  "scripts": {
+    "dev": ".\\venv\\Scripts\\python main.py",
+    "install:packages": ".\\venv\\Scripts\\pip install -r requirements.txt"
+  }
+}

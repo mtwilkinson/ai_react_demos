@@ -1,5 +1,5 @@
 {
-  "name": "ai_react_demos",
+  "name": "frontend",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "install:packages": "npm install"
   },
   "dependencies": {
     "axios": "^1.12.2",
@@ -15,7 +16,8 @@
     "react-dom": "^19.1.1",
     "react-router": "^7.9.4",
     "react-router-dom": "^7.9.4",
-    "react-toastify": "^11.0.5"
+    "react-toastify": "^11.0.5",
+    "turbo": "^2.1.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",

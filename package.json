@@ -1,0 +1,22 @@
+{
+  "name": "personal-website",
+  "version": "1.0.0",
+  "description": "This repo is set up similarly to your team repo. The backend folder \r contains the express routes, the frontend folder contains the React \r routes, and the common folder contains code used by the frontend and\r backend. To start the program select start from the run configurations \r in the top right, then click play. This will install the necessary \r dependencies, then start the backend and frontend.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "turbo run dev",
+    "install:packages": "turbo run install:packages"
+  },
+  "packageManager": "npm@10.9.3",
+  "author": "mtwilkinson <122630959+mtwilkinson@users.noreply.github.com>",
+  "license": "ISC",
+  "dependencies": {
+    "turbo": "^2.1.2"
+  },
+  "private": true,
+  "workspaces": [
+    "Backend",
+    "Frontend"
+  ],
+  "repository": "https://github.com/mtwilkinson/ai_react_demos.git"
+}
