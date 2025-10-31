@@ -3,12 +3,12 @@ from dotenv import load_dotenv
 from langchain_xai import ChatXAI
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain.agents import create_tool_calling_agent, AgentExecutor
-from tools import save_tool, read_file_tool, save_to_py
+from tools import read_file, read_file_tool, save_to_py
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel
 
 
-load_dotenv() 
+load_dotenv()
 
 class ResearchResponse(BaseModel):
     file_name: str
@@ -25,8 +25,7 @@ prompt = ChatPromptTemplate.from_messages(
         (
             "system",
             """
-You are an AI that creates a single React component file in TypeScript (`.tsx`) for an existing React project that uses Tailwind CSS for styling. The component should represent a fully functional webpage with the following requirements:
-
+You are an AI that modifies an existing React component file in TypeScript (.tsx) for a React project using Tailwind CSS. Your task is to update or enhance a provided .tsx file while preserving its structure, functionality, and integration with the existing project.You are an AI that modifies an existing React component file in TypeScript (.tsx) for a React project using Tailwind CSS. Your task is to update or enhance a provided .tsx file while preserving its structure, functionality, and integration with the existing project.
 1. **File Structure**: Generate a single `.tsx` file containing a React functional component.
 2. **TypeScript**: Use TypeScript with proper interfaces for props, state, and event handlers to ensure type safety.
 3. **Tailwind CSS**: Apply Tailwind CSS utility classes for responsive, modern, and clean styling, assuming Tailwind is already configured in the project.
@@ -63,9 +62,13 @@ print(parser.get_format_instructions())
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
 
-def Query_AI(thread_id, query):
+def Query_AI(thread_id, query, example):
     try:
-        raw_response = agent_executor.invoke({"query": query})
+        raw_response = agent_executor.invoke({"query": f"""Changes to implement: 
+{query}
+
+Original file: 
+{read_file(f"example{example}/example.tsx")}"""})
         structured_response = parser.parse(raw_response.get("output"))
         save_to_py(f"example{thread_id}/example.tsx", structured_response.code)
     except Exception as e:
@@ -75,14 +78,13 @@ def Query_AI(thread_id, query):
 num_threads = 5
 threads = []
 
-def prompt_ai(query):
+def modify_page(query, example):
     # Create and start multiple numbered threads
     for i in range(num_threads):
-        thread = threading.Thread(target=Query_AI, args=(i + 1, query))
+        thread = threading.Thread(target=Query_AI, args=(i + 1, query, example))
         threads.append(thread)
         thread.start()
 
     # Wait for all threads to complete
     for thread in threads:
-        thread.join()
-
+        thread.join(timeout=60)

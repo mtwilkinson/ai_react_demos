@@ -1,15 +1,14 @@
 import threading
 from dotenv import load_dotenv
-from pydantic import BaseModel
-from langchain_openai import ChatOpenAI
 from langchain_xai import ChatXAI
-from langchain_anthropic import ChatAnthropic
-from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain.agents import create_tool_calling_agent, AgentExecutor
-from tools import save_tool, read_file_tool, save_to_py
+from tools import read_file_tool, save_to_py
+from langchain_core.prompts import ChatPromptTemplate
+from pydantic import BaseModel
 
-load_dotenv()
+
+load_dotenv() 
 
 class ResearchResponse(BaseModel):
     file_name: str
@@ -37,7 +36,8 @@ You are an AI that creates a single React component file in TypeScript (`.tsx`) 
 7. **Functionality**: Include an interactive feature (e.g., a counter, todo list, or data display) with clear user interaction and state management.
 8. **Export**: Ensure the component is exported as the default export for use in an existing React project.
 9. **Import**: Ensure all necessary imports are included.
-10. **size**: Ensure that the page is not scrollable. Do not use h-screen, w-screen, h-full, or w-full. On the outer most div, use flex-grow.
+10. **API Calls**: use placeholder functions for the API calls. For get requests, return a hardcoded json object. For post requests, return a hardcoded json object.
+11. **size**: Ensure that the page is not scrollable. Do not use h-screen, w-screen, h-full, or w-full. On the outer most div, use flex-grow.
 
 
 Response Structure:
@@ -61,29 +61,28 @@ agent = create_tool_calling_agent(
 print(parser.get_format_instructions())
 
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
-query = input("Input: ")
 
 
-def Query_AI(thread_id):
+def Query_AI(thread_id, query):
     try:
         raw_response = agent_executor.invoke({"query": query})
         structured_response = parser.parse(raw_response.get("output"))
-        save_to_py(f"example{thread_id}/{structured_response.file_name}", structured_response.code)
+        save_to_py(f"example{thread_id}/example.tsx", structured_response.code)
     except Exception as e:
-        print("Error parsing response", e, "Raw Response - ", raw_response)
+        print("Error parsing response", e)
 
 
 num_threads = 5
 threads = []
 
-# Create and start multiple numbered threads
-for i in range(num_threads):
-    thread = threading.Thread(target=Query_AI, args=(i + 1,))
-    threads.append(thread)
-    thread.start()
+def build_page(query):
+    # Create and start multiple numbered threads
+    for i in range(num_threads):
+        thread = threading.Thread(target=Query_AI, args=(i + 1, query))
+        threads.append(thread)
+        thread.start()
 
-# Wait for all threads to complete
-for thread in threads:
-    thread.join()
+    # Wait for all threads to complete
+    for thread in threads:
+        thread.join()
 
-print("All threads have finished execution.")

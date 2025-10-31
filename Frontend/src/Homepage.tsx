@@ -7,6 +7,7 @@ interface ApiResponse {
 }
 
 const Homepage: React.FC = () => {
+    const [selectedExample, setSelectedExample] = useState<number>(0);
     const [prompt, setPrompt] = useState<string>('');
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [toastMessage, setToastMessage] = useState<string>('');
@@ -17,7 +18,7 @@ const Homepage: React.FC = () => {
         setIsLoading(true);
         try {
             // Placeholder post API call
-            const response: ApiResponse = await axios.post("/api/prompt", {"prompt": prompt})
+            const response: ApiResponse = await axios.post("/api/prompt", {"prompt": prompt, "example": selectedExample });
             setToastMessage(response.message || 'Prompt submitted successfully!');
             setShowToast(true);
             setTimeout(() => setShowToast(false), 1500);
@@ -34,7 +35,20 @@ const Homepage: React.FC = () => {
     return (
         <div className="flex-grow bg-gray-100 p-4 flex flex-col items-center justify-center min-h-0">
             <div className="w-full max-w-4xl bg-white rounded-lg shadow-md p-6">
-                <h1 className="text-2xl font-bold mb-4 text-center">Create Your Prompt</h1>
+                <h1 className="text-2xl font-bold mb-4 text-center">Create Your Prompt</h1><div className="mb-6">
+                <label className="block text-lg font-semibold mb-4 text-gray-700">Base on existing page</label>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    {[1, 2, 3, 4, 5].map((example) => (
+                        <button
+                            key={example}
+                            onClick={() => setSelectedExample(example === selectedExample ? 0 : example)}
+                            className={`px-4 py-3 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 ${selectedExample === example ? 'bg-blue-500 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'} focus:outline-none focus:ring-2 focus:ring-blue-400`}
+                        >
+                            {`example ${example}`}
+                        </button>
+                    ))}
+                </div>
+            </div>
                 <textarea
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}

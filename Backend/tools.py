@@ -1,7 +1,6 @@
 from langchain.tools import StructuredTool
 from pydantic import BaseModel, Field
 import os
-from typing import Dict
 
 base_file_path = "../Frontend/src/examples"
 
@@ -28,7 +27,7 @@ class ReadFileArgs(BaseModel):
 
 def read_file(file_name: str) -> str:
     try:
-        with open(f"AI_generated/{file_name}", "r", encoding="utf-8") as f:
+        with open(f"{base_file_path}/{file_name}", "r", encoding="utf-8") as f:
             content = f.read()
         return content
     except FileNotFoundError:
