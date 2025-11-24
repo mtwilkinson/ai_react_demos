@@ -3,17 +3,41 @@ from pydantic import BaseModel, Field
 import os
 
 base_file_path = "../Frontend/src/examples"
+backup_file_path = "../Frontend/src/backups"
 
 class SaveFileArgs(BaseModel):
     file_name: str = Field(description="The name of the file")
     code: str = Field(description="The code to store in the file")
 
 def save_to_py(file_name: str, code: str) -> str:
-    os.makedirs("base_file_path", exist_ok=True)  # Ensure directory exists
+    # Save backup file
+    try:
+        with open(f"{base_file_path}/{file_name}", "r", encoding="utf-8") as f:
+            content = f.read()
+            with open(f"{backup_file_path}/{file_name}", "w", encoding="utf-8") as g:
+                g.write(content)
+    except Exception as e:
+        print(f"Error reading file: {str(e)}")
+    # Update the React file
     file_path = f"{base_file_path}/{file_name}"
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(code)
     return f"Data successfully saved to {file_name}"
+
+def undo_prompt() -> str:
+    try:
+        for i in range(1, 5):
+        # Save backup file
+            with open(f"{base_file_path}/example{i}/example.tsx", "r", encoding="utf-8") as e, open(f"{backup_file_path}/example{i}/example.tsx", "r", encoding="utf-8") as b:
+                backup = b.read()
+                example = e.read()
+            with open(f"{base_file_path}/example{i}/example.tsx", "w", encoding="utf-8") as e, open(f"{backup_file_path}/example{i}/example.tsx", "w", encoding="utf-8") as b:
+                e.write(backup)
+                b.write(example)
+    except Exception as e:
+        print(f"Error reading file: {str(e)}")
+        return f"Error reading file: {str(e)}"
+    return f"successfully reverted the most recent prompt"
 
 save_tool = StructuredTool.from_function(
     func=save_to_py,

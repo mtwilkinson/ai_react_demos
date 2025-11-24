@@ -3,7 +3,7 @@ import axios from 'axios';
 
 interface ApiResponse {
     success: boolean;
-    message?: string;
+    message: string;
 }
 
 const Homepage: React.FC = () => {
@@ -14,12 +14,29 @@ const Homepage: React.FC = () => {
     const [showToast, setShowToast] = useState<boolean>(false);
 
     const handleSubmit = async () => {
-        if (!prompt.trim()) return;
         setIsLoading(true);
         try {
             // Placeholder post API call
-            const response: ApiResponse = await axios.post("/api/prompt", {"prompt": prompt, "example": selectedExample });
-            setToastMessage(response.message || 'Prompt submitted successfully!');
+            const response: { data: ApiResponse } = await axios.post("/api/prompt", {"prompt": prompt, "example": selectedExample });
+            setToastMessage(response.data.message);
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 1500);
+        } catch (error) {
+            setToastMessage('Error submitting prompt');
+            console.log(error);
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 1500);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleUndo = async () => {
+        setIsLoading(true);
+        try {
+            // Placeholder post API call
+            const response:{ data: ApiResponse } = await axios.get("/api/undo");
+            setToastMessage(response.data.message);
             setShowToast(true);
             setTimeout(() => setShowToast(false), 1500);
         } catch (error) {
@@ -55,13 +72,22 @@ const Homepage: React.FC = () => {
                     placeholder="Enter a detailed prompt for the AI to build a React webpage..."
                     className="w-full h-80 p-3 border border-gray-300 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
                 />
-                <button
-                    onClick={handleSubmit}
-                    disabled={isLoading || !prompt.trim()}
-                    className={`w-full py-2 px-4 rounded-md font-medium transition-colors duration-200 ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600 text-white'}`}
-                >
-                    {isLoading ? 'Submitting...' : 'Submit Prompt'}
-                </button>
+                <div className="flex space-x-4">
+                    <button
+                        onClick={handleUndo}
+                        disabled={isLoading}
+                        className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors duration-200 ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-500 hover:bg-gray-600 text-white'}`}
+                    >
+                        Undo Prompt
+                    </button>
+                    <button
+                        onClick={handleSubmit}
+                        disabled={isLoading || !prompt.trim()}
+                        className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors duration-200 ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600 text-white'}`}
+                    >
+                        {isLoading ? 'Submitting...' : 'Submit Prompt'}
+                    </button>
+                </div>
             </div>
             {showToast && (
                 <div className="fixed centered bg-green-500 text-white px-4 py-2 rounded-md shadow-lg z-10">
