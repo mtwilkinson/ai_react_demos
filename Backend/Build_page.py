@@ -6,6 +6,8 @@ from langchain.agents import create_tool_calling_agent, AgentExecutor
 from tools import read_file_tool, save_to_py
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel
+from linter import linter, reset_code
+from Modify_page import Query_Modify_AI
 
 
 load_dotenv() 
@@ -60,7 +62,7 @@ agent = create_tool_calling_agent(
 
 print(parser.get_format_instructions())
 
-agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=False)
 
 
 def Query_AI(thread_id, query):
@@ -68,6 +70,17 @@ def Query_AI(thread_id, query):
         raw_response = agent_executor.invoke({"query": query})
         structured_response = parser.parse(raw_response.get("output"))
         save_to_py(f"example{thread_id}/example.tsx", structured_response.code)
+        success, message = linter(thread_id)
+        if not success:
+            print(f"Thread {thread_id}:")
+            print(message)
+            Query_Modify_AI(thread_id, f"Fix the following errors: {message}", thread_id)
+            success, message = linter(thread_id)
+        
+        if not success:
+            print(f"Thread {thread_id} Failed to generate the page")
+            print(message)
+            reset_code(thread_id)
     except Exception as e:
         print("Error parsing response", e)
 

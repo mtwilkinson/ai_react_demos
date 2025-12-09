@@ -59,10 +59,10 @@ agent = create_tool_calling_agent(
 
 print(parser.get_format_instructions())
 
-agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=False)
 
 
-def Query_AI(thread_id, query, example):
+def Query_Modify_AI(thread_id, query, example):
     try:
         raw_response = agent_executor.invoke({"query": f"""Changes to implement: 
 {query}
@@ -81,7 +81,7 @@ threads = []
 def modify_page(query, example):
     # Create and start multiple numbered threads
     for i in range(num_threads):
-        thread = threading.Thread(target=Query_AI, args=(i + 1, query, example))
+        thread = threading.Thread(target=Query_Modify_AI, args=(i + 1, query, example))
         threads.append(thread)
         thread.start()
 
