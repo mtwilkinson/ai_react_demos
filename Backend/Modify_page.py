@@ -3,7 +3,8 @@ from dotenv import load_dotenv
 from langchain_xai import ChatXAI
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain.agents import create_tool_calling_agent, AgentExecutor
-from tools import read_file, read_file_tool, save_to_py
+from linter import linter, reset_code
+from tools import read_file, read_file_tool, save_example, save_test
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel
 
@@ -57,22 +58,42 @@ agent = create_tool_calling_agent(
     tools=tools
 )
 
-print(parser.get_format_instructions())
-
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=False)
 
 
-def Query_Modify_AI(thread_id, query, example):
+def modify_example(thread_id, query, example):
+    try:
+        query_modify_AI(query, example, thread_id)
+        success, message = linter(thread_id)
+        if not success:
+            print(f"Thread {thread_id}:")
+            print(message)
+            query_modify_AI(f"Fix the following errors: {message}", thread_id, thread_id, test=True)
+            success, message = linter(thread_id)
+        
+        if not success:
+            print(f"Thread {thread_id} Failed to generate the page")
+            print(message)
+            reset_code(thread_id)
+        else:
+            save_example(thread_id)
+    except Exception as e:
+        print("Error parsing response", e)
+
+        
+
+def query_modify_AI(query, example, thread_id, test=False):
     try:
         raw_response = agent_executor.invoke({"query": f"""Changes to implement: 
 {query}
 
 Original file: 
-{read_file(f"example{example}/example.tsx")}"""})
+{read_file(f"example{example}/test.tsx" if test else f"example{example}/example.tsx")}"""})
         structured_response = parser.parse(raw_response.get("output"))
-        save_to_py(f"example{thread_id}/example.tsx", structured_response.code)
+        save_test(f"example{thread_id}/test.tsx", structured_response.code)
     except Exception as e:
         print("Error parsing response", e)
+
 
 
 num_threads = 5
@@ -81,7 +102,7 @@ threads = []
 def modify_page(query, example):
     # Create and start multiple numbered threads
     for i in range(num_threads):
-        thread = threading.Thread(target=Query_Modify_AI, args=(i + 1, query, example))
+        thread = threading.Thread(target=modify_example, args=(i + 1, query, example))
         threads.append(thread)
         thread.start()
 

@@ -3,11 +3,11 @@ from dotenv import load_dotenv
 from langchain_xai import ChatXAI
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain.agents import create_tool_calling_agent, AgentExecutor
-from tools import read_file_tool, save_to_py
+from tools import read_file_tool, save_example, save_test, retry_number
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel
 from linter import linter, reset_code
-from Modify_page import Query_Modify_AI
+from Modify_page import modify_example, query_modify_AI
 
 
 load_dotenv() 
@@ -60,8 +60,6 @@ agent = create_tool_calling_agent(
     tools=tools
 )
 
-print(parser.get_format_instructions())
-
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=False)
 
 
@@ -69,20 +67,22 @@ def Query_AI(thread_id, query):
     try:
         raw_response = agent_executor.invoke({"query": query})
         structured_response = parser.parse(raw_response.get("output"))
-        save_to_py(f"example{thread_id}/example.tsx", structured_response.code)
+        save_test(f"example{thread_id}/test.tsx", structured_response.code)
         success, message = linter(thread_id)
         if not success:
             print(f"Thread {thread_id}:")
             print(message)
-            Query_Modify_AI(thread_id, f"Fix the following errors: {message}", thread_id)
+            query_modify_AI(f"Fix the following errors: {message}", thread_id, thread_id, test=True)
             success, message = linter(thread_id)
-        
         if not success:
             print(f"Thread {thread_id} Failed to generate the page")
             print(message)
             reset_code(thread_id)
+        else:
+            save_example(thread_id)
     except Exception as e:
         print("Error parsing response", e)
+
 
 
 num_threads = 5

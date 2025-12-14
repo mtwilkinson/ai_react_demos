@@ -1,6 +1,6 @@
 import subprocess
 import os
-from tools import save_to_py
+from tools import save_example
 
 def linter(example_number: int):
     try:
@@ -11,7 +11,7 @@ def linter(example_number: int):
         # On Windows, use shell=True to access PATH properly
         # Use shell=True so that the command can find npx in the PATH
         result = subprocess.run(
-            f"npx eslint ./src/examples/example{example_number}/Example.tsx",
+            f"npx eslint ./src/examples/example{example_number}/test.tsx",
             shell=True,
             capture_output=True,
             text=True,
@@ -30,7 +30,7 @@ def linter(example_number: int):
         return 0, f"Error: {e}"
 
 def reset_code(example_number: int):
-    save_to_py(f"example{example_number}/example.tsx", placeholder_code)
+    save_example(example_number, code=placeholder_code)
 
 placeholder_code = f"""
 import React from 'react';

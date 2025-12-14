@@ -2,6 +2,9 @@ from langchain.tools import StructuredTool
 from pydantic import BaseModel, Field
 import os
 
+retry_number = 1
+
+
 base_file_path = "../Frontend/src/examples"
 backup_file_path = "../Frontend/src/backups"
 
@@ -9,16 +12,32 @@ class SaveFileArgs(BaseModel):
     file_name: str = Field(description="The name of the file")
     code: str = Field(description="The code to store in the file")
 
-def save_to_py(file_name: str, code: str) -> str:
+def save_example(thread_id: int, code='') -> str:
+    example_path = f"example{thread_id}/"
     # Save backup file
     try:
-        with open(f"{base_file_path}/{file_name}", "r", encoding="utf-8") as f:
+        with open(f"{base_file_path}/{example_path}/example.tsx", "r", encoding="utf-8") as f:
             content = f.read()
-            with open(f"{backup_file_path}/{file_name}", "w", encoding="utf-8") as g:
+            with open(f"{backup_file_path}/{example_path}/example.tsx", "w", encoding="utf-8") as g:
                 g.write(content)
     except Exception as e:
         print(f"Error reading file: {str(e)}")
     # Update the React file
+    if code == '':
+        try:
+            with open(f"{base_file_path}/{example_path}/test.tsx", "r", encoding="utf-8") as f:
+                content = f.read()
+                with open(f"{base_file_path}/{example_path}/example.tsx", "w", encoding="utf-8") as g:
+                    g.write(content)
+        except Exception as e:
+            print(f"Error reading file: {str(e)}")
+        return f"Data successfully saved to {example_path}/example.tsx"
+    else:
+        with open(f"{base_file_path}/{example_path}/example.tsx", "w", encoding="utf-8") as f:
+            f.write(code)
+        return f"Data successfully saved to {example_path}/example.tsx"
+
+def save_test(file_name: str, code: str) -> str:
     file_path = f"{base_file_path}/{file_name}"
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(code)
@@ -39,12 +58,6 @@ def undo_prompt() -> str:
         return f"Error reading file: {str(e)}"
     return f"successfully reverted the most recent prompt"
 
-save_tool = StructuredTool.from_function(
-    func=save_to_py,
-    name="save_to_file",
-    description="Saves code to a file. Takes the file name and code as input.",
-    args_schema=SaveFileArgs
-)
 
 class ReadFileArgs(BaseModel):
     file_name: str = Field(description="The name of the file to read")
