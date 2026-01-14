@@ -17,7 +17,7 @@ const Homepage: React.FC = () => {
         setIsLoading(true);
         try {
             // Placeholder post API call
-            const response: { data: ApiResponse } = await axios.post("/api/prompt", {"prompt": prompt, "example": selectedExample });
+            const response: { data: ApiResponse } = await axios.post("/api/prompt", {"prompt": prompt, "example": selectedExample }, { timeout: 120000 });
             setToastMessage(response.data.message);
             setShowToast(true);
             setTimeout(() => setShowToast(false), 1500);
