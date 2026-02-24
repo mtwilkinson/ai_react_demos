@@ -2,7 +2,7 @@
   "name": "backend",
   "version": "0.0.0",
   "scripts": {
-    "dev": ".\\venv\\Scripts\\uvicorn main:app --reload --port 3001",
-    "install:packages": ".\\venv\\Scripts\\pip install -r requirements.txt"
+    "dev": "venv/bin/uvicorn main:app --reload --port 3001",
+    "install:packages": "venv/bin/pip3 install -r requirements.txt"
   }
 }

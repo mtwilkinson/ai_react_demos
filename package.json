@@ -10,13 +10,13 @@
   "packageManager": "npm@10.9.3",
   "author": "mtwilkinson <122630959+mtwilkinson@users.noreply.github.com>",
   "license": "ISC",
-  "dependencies": {
-    "turbo": "^2.1.2"
-  },
   "private": true,
   "workspaces": [
     "Backend",
     "Frontend"
   ],
-  "repository": "https://github.com/mtwilkinson/ai_react_demos.git"
+  "repository": "https://github.com/mtwilkinson/ai_react_demos.git",
+  "devDependencies": {
+    "turbo": "^2.8.11-canary.22"
+  }
 }

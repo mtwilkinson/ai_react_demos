@@ -6,19 +6,19 @@ retry_number = 1
 
 
 base_file_path = "../Frontend/src/examples"
-backup_file_path = "../Frontend/src/backups"
+backup_file_path = "../Frontend/src/Backups"
 
 class SaveFileArgs(BaseModel):
     file_name: str = Field(description="The name of the file")
     code: str = Field(description="The code to store in the file")
 
 def save_example(thread_id: int, code='') -> str:
-    example_path = f"example{thread_id}/"
+    example_path = f"example{thread_id}"
     # Save backup file
     try:
-        with open(f"{base_file_path}/{example_path}/example.tsx", "r", encoding="utf-8") as f:
+        with open(f"{base_file_path}/{example_path}/Example.tsx", "r", encoding="utf-8") as f:
             content = f.read()
-            with open(f"{backup_file_path}/{example_path}/example.tsx", "w", encoding="utf-8") as g:
+            with open(f"{backup_file_path}/{example_path}/Example.tsx", "w", encoding="utf-8") as g:
                 g.write(content)
     except Exception as e:
         print(f"Error reading file: {str(e)}")
@@ -27,15 +27,15 @@ def save_example(thread_id: int, code='') -> str:
         try:
             with open(f"{base_file_path}/{example_path}/test.tsx", "r", encoding="utf-8") as f:
                 content = f.read()
-                with open(f"{base_file_path}/{example_path}/example.tsx", "w", encoding="utf-8") as g:
+                with open(f"{base_file_path}/{example_path}/Example.tsx", "w", encoding="utf-8") as g:
                     g.write(content)
         except Exception as e:
             print(f"Error reading file: {str(e)}")
-        return f"Data successfully saved to {example_path}/example.tsx"
+        return f"Data successfully saved to {example_path}/Example.tsx"
     else:
-        with open(f"{base_file_path}/{example_path}/example.tsx", "w", encoding="utf-8") as f:
+        with open(f"{base_file_path}/{example_path}/Example.tsx", "w", encoding="utf-8") as f:
             f.write(code)
-        return f"Data successfully saved to {example_path}/example.tsx"
+        return f"Data successfully saved to {example_path}/Example.tsx"
 
 def save_test(file_name: str, code: str) -> str:
     file_path = f"{base_file_path}/{file_name}"
@@ -47,10 +47,10 @@ def undo_prompt() -> str:
     try:
         for i in range(1, 5):
         # Save backup file
-            with open(f"{base_file_path}/example{i}/example.tsx", "r", encoding="utf-8") as e, open(f"{backup_file_path}/example{i}/example.tsx", "r", encoding="utf-8") as b:
+            with open(f"{base_file_path}/example{i}/Example.tsx", "r", encoding="utf-8") as e, open(f"{backup_file_path}/example{i}/Example.tsx", "r", encoding="utf-8") as b:
                 backup = b.read()
                 example = e.read()
-            with open(f"{base_file_path}/example{i}/example.tsx", "w", encoding="utf-8") as e, open(f"{backup_file_path}/example{i}/example.tsx", "w", encoding="utf-8") as b:
+            with open(f"{base_file_path}/example{i}/Example.tsx", "w", encoding="utf-8") as e, open(f"{backup_file_path}/example{i}/Example.tsx", "w", encoding="utf-8") as b:
                 e.write(backup)
                 b.write(example)
     except Exception as e:
