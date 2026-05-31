@@ -1,11 +1,10 @@
 import threading
 from dotenv import load_dotenv
 from langchain_xai import ChatXAI
-from langchain_core.output_parsers import PydanticOutputParser
-from langchain.agents import create_tool_calling_agent, AgentExecutor
+from langchain.agents import create_agent
+from langchain.agents.structured_output import ToolStrategy
 from linter import linter, reset_code
 from tools import read_file, read_file_tool, save_example, save_test
-from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel
 
 
@@ -17,16 +16,8 @@ class ResearchResponse(BaseModel):
     tools_used: list[str]
 
 
-llm = ChatXAI(model="grok-code-fast-1")
-parser = PydanticOutputParser(pydantic_object=ResearchResponse)
-format_instructions=parser.get_format_instructions()
-
-prompt = ChatPromptTemplate.from_messages(
-    [
-        (
-            "system",
-            """
-You are an AI that modifies an existing React component file in TypeScript (.tsx) for a React project using Tailwind CSS. Your task is to update or enhance a provided .tsx file while preserving its structure, functionality, and integration with the existing project.You are an AI that modifies an existing React component file in TypeScript (.tsx) for a React project using Tailwind CSS. Your task is to update or enhance a provided .tsx file while preserving its structure, functionality, and integration with the existing project.
+SYSTEM_PROMPT = """
+You are an AI that modifies an existing React component file in TypeScript (.tsx) for a React project using Tailwind CSS. Your task is to update or enhance a provided .tsx file while preserving its structure, functionality, and integration with the existing project.
 1. **File Structure**: Generate a single `.tsx` file containing a React functional component.
 2. **TypeScript**: Use TypeScript with proper interfaces for props, state, and event handlers to ensure type safety.
 3. **Tailwind CSS**: Apply Tailwind CSS utility classes for responsive, modern, and clean styling, assuming Tailwind is already configured in the project.
@@ -39,26 +30,17 @@ You are an AI that modifies an existing React component file in TypeScript (.tsx
 10. **API Calls**: use placeholder functions for the API calls. For get requests, return a hardcoded json object. For post requests, return a hardcoded json object.
 11. **size**: Ensure that the page is not scrollable. Do not use h-screen, w-screen, h-full, or w-full. On the outer most div, use flex-grow.
 
-
-Response Structure:
-{format_instructions}
 Tool Usage: Invoke LangChain tools only when necessary to enhance your response (e.g., search for libraries, execute code snippets). Do not hallucinate information—rely on verified sources.
+"""
 
-            """,
-        ),
-        ("human", "{query}"),
-        ("assistant", "{agent_scratchpad}"),
-    ]
-).partial(format_instructions=parser.get_format_instructions())
-
+llm = ChatXAI(model="grok-code-fast-1")
 tools = [read_file_tool]
-agent = create_tool_calling_agent(
-    llm=llm,
-    prompt=prompt,
-    tools=tools
+agent = create_agent(
+    model=llm,
+    tools=tools,
+    system_prompt=SYSTEM_PROMPT,
+    response_format=ToolStrategy(ResearchResponse),
 )
-
-agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=False)
 
 
 def modify_example(thread_id, query, example):
@@ -84,12 +66,12 @@ def modify_example(thread_id, query, example):
 
 def query_modify_AI(query, example, thread_id, test=False):
     try:
-        raw_response = agent_executor.invoke({"query": f"""Changes to implement: 
+        raw_response = agent.invoke({"messages": [{"role": "user", "content": f"""Changes to implement: 
 {query}
 
 Original file: 
-{read_file(f"example{example}/test.tsx" if test else f"example{example}/example.tsx")}"""})
-        structured_response = parser.parse(raw_response.get("output"))
+{read_file(f"example{example}/test.tsx" if test else f"example{example}/example.tsx")}"""}]})
+        structured_response = raw_response["structured_response"]
         save_test(f"example{thread_id}/test.tsx", structured_response.code)
     except Exception as e:
         print("Error parsing response", e)
