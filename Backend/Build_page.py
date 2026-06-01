@@ -4,7 +4,7 @@ from langchain_xai import ChatXAI
 from langchain.agents import create_agent
 from langchain.agents.structured_output import ToolStrategy
 from tools import read_file_tool, save_example, save_test, retry_number
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from linter import linter, reset_code
 from Modify_page import modify_example, query_modify_AI
 
@@ -12,9 +12,16 @@ from Modify_page import modify_example, query_modify_AI
 load_dotenv()
 
 class ResearchResponse(BaseModel):
-    file_name: str
-    code: str
-    tools_used: list[str]
+    file_name: str = Field(description="Always 'test.tsx'.")
+    code: str = Field(
+        description=(
+            "Complete runnable TypeScript/TSX for one React component: imports, "
+            "interfaces/types as needed, the component, and export default. "
+            "Executable source only—never research notes, suggestions, markdown fences, "
+            "or a restatement of the user prompt."
+        )
+    )
+    tools_used: list[str] = Field(description="Tool names invoked, or an empty list.")
 
 
 SYSTEM_PROMPT = """
@@ -32,8 +39,48 @@ You are an AI that creates a single React component file in TypeScript (`.tsx`) 
 10. **API Calls**: use placeholder functions for the API calls. For get requests, return a hardcoded json object. For post requests, return a hardcoded json object.
 11. **size**: Ensure that the page is not scrollable. Do not use h-screen, w-screen, h-full, or w-full. On the outer most div, use flex-grow.
 
-Tool Usage: Invoke LangChain tools only when necessary to enhance your response (e.g., search for libraries, execute code snippets). Do not hallucinate information—rely on verified sources.
+## Structured output (required)
+- `file_name`: always `test.tsx`
+- `code`: the full `.tsx` file as plain source text—no markdown code fences, no bullet lists, no "suggestions" or research summaries. Implement the design directly in TSX.
+- `tools_used`: tools you called, or `[]`
+
+If the user asks you to research patterns or styles, use that only as guidance while writing real component code in `code`. Never put the user's request or your research notes into `code`.
+
+Tool Usage: Invoke LangChain tools only when necessary to enhance your response (e.g., read reference files). Do not hallucinate information—rely on verified sources.
 """
+
+
+def build_user_message(query: str) -> str:
+    return f"""Implement the following as a complete React TypeScript component and put the full `.tsx` source in the structured `code` field:
+
+{query}
+
+The `code` field must be runnable TSX (imports, component with JSX/Tailwind, placeholder API helpers if needed, `export default`)—not a description or comment about what to build."""
+
+
+def extract_tsx_code(raw: str) -> str:
+    text = raw.strip()
+    if not text.startswith("```"):
+        return text
+    lines = text.split("\n")
+    if lines[0].startswith("```"):
+        lines = lines[1:]
+    if lines and lines[-1].strip() == "```":
+        lines = lines[:-1]
+    return "\n".join(lines).strip()
+
+
+def is_valid_tsx(code: str) -> bool:
+    stripped = code.strip()
+    if len(stripped) < 80:
+        return False
+    lines = [line.strip() for line in stripped.splitlines() if line.strip()]
+    if lines and all(line.startswith("//") for line in lines):
+        return False
+    return any(
+        marker in stripped
+        for marker in ("import ", "export default", "export ", "<", "React")
+    )
 
 llm = ChatXAI(model="grok-code-fast-1")
 tools = [read_file_tool]
@@ -46,10 +93,29 @@ agent = create_agent(
 
 
 def Query_AI(thread_id, query):
+    user_message = build_user_message(query)
     try:
-        raw_response = agent.invoke({"messages": [{"role": "user", "content": query}]})
-        structured_response = raw_response["structured_response"]
-        save_test(f"example{thread_id}/test.tsx", structured_response.code)
+        for attempt in range(2):
+            raw_response = agent.invoke(
+                {"messages": [{"role": "user", "content": user_message}]}
+            )
+            structured_response = raw_response["structured_response"]
+            code = extract_tsx_code(structured_response.code)
+            if is_valid_tsx(code):
+                break
+            if attempt == 0:
+                user_message = (
+                    "Your previous response did not include valid TSX source in `code`. "
+                    "Return a complete React component file (imports, JSX, hooks, "
+                    "`export default`)—not comments or research text.\n\n"
+                    + build_user_message(query)
+                )
+                continue
+            print(f"Thread {thread_id}: agent returned non-TSX content")
+            return
+
+        print(code)
+        save_test(f"example{thread_id}/test.tsx", code)
         success, message = linter(thread_id)
         if not success:
             print(f"Thread {thread_id}:")
